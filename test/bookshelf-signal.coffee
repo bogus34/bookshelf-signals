@@ -52,8 +52,6 @@ describe 'Bookshelf signals', ->
         f2.should.have.been.called()
         f3.should.not.have.been.called()
 
-    it "method 'once' doesn't unsubscribe callback if it was not called"
-
     it 'reject save if callback is rejected', co ->
         f = spy -> throw new Error('blah')
         db.on 'saving', f
@@ -63,3 +61,54 @@ describe 'Bookshelf signals', ->
 
         db.off 'saving', f
         yield new User().save().should.be.fulfilled
+
+    describe 'once', ->
+        it "method 'once' doesn't unsubscribe callback if it was not called", co ->
+            class User2 extends db.Model
+                tableName: 'users'
+
+            f = spy()
+            db.once 'saving', User2, f
+
+            yield new User().save().should.be.fulfilled
+            f.should.not.have.been.called()
+            yield [
+                new User2().save().should.be.fulfilled
+                new User2().save().should.be.fulfilled
+            ]
+            f.should.be.called.once
+
+
+    describe 'off', ->
+        it 'can unsubscribe handler and class pair', co ->
+            f = spy()
+            db.on 'saving', db.Model, f
+
+            yield new User().save().should.be.fulfilled
+            f.should.have.been.called()
+
+            f.reset()
+            db.off 'saving', db.Model, f
+
+            yield new User().save().should.be.fulfilled
+            f.should.not.have.been.called()
+
+        it 'unsubscribes all filtered handlers if cls not passed', co ->
+            f1 = spy()
+            f2 = spy()
+            db.on 'saving', User, f1
+            db.on 'saving', db.Model, f1
+            db.on 'saving', f1
+            db.on 'saving', f2
+
+            yield new User().save().should.be.fulfilled
+            f1.should.have.been.called.exactly(3)
+            f2.should.have.been.called.once
+
+            f1.reset()
+            f2.reset()
+            db.off 'saving', f1
+
+            yield new User().save().should.be.fulfilled
+            f1.should.not.have.been.called()
+            f2.should.have.been.called.once

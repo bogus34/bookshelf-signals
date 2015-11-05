@@ -2,13 +2,16 @@ Events = require 'bookshelf/lib/base/events'
 
 plugin = (hub) -> (db) ->
     class EventsHub extends Events
+        constructor: ->
+            @_handlersWithFilter = []
+
         on: (event, cls, handler) ->
             unless handler?
                 handler = cls
                 cls = null
 
-            fn = if cls?
-                (obj) ->
+            if cls?
+                fn = (obj) ->
                     if typeof cls is 'string'
                         if obj instanceof db.Model
                             handler(arguments...) if obj instanceof db.model(cls)
@@ -16,10 +19,52 @@ plugin = (hub) -> (db) ->
                             handler(arguments...) if obj instanceof db.collection(cls)
                     else
                         handler(arguments...) if obj instanceof cls
+                @_handlersWithFilter.push [cls, handler, fn]
             else
-                handler
+                fn = handler
 
             super(event, fn)
+
+        off: (event, cls, handler) ->
+            unless handler?
+                handler = cls
+                cls = null
+
+            if cls
+                fn = @_popHandler(cls, handler)
+                super(event, fn) if fn
+            else
+                fns = @_popAllHandlers(handler)
+                fns.push handler
+                super(event, fn) for fn in fns
+
+        once: (event, cls, handler) ->
+            once = =>
+                @off event, cls, once
+                handler(arguments...)
+            @on event, cls, once
+
+        _findHandler: (cls, handler) ->
+            for [cls_, handler_, fn], i in @_handlersWithFilter
+                return [i, fn] if cls is cls_ and handler is handler_
+            [-1, null]
+
+        _popHandler: (cls, handler) ->
+            [i, fn] = @_findHandler(cls, handler)
+            if fn?
+                @_handlersWithFilter.splice i, 1
+            fn
+
+        _popAllHandlers: (handler) ->
+            swap = []
+            result = []
+            for [cls_, handler_, fn] in @_handlersWithFilter
+                if handler is handler_
+                    result.push fn
+                else
+                    swap.push [cls_, handler_, fn]
+            @_handlersWithFilter = swap
+            result
 
     unless hub?
         hub = new EventsHub()
