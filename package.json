@@ -8,7 +8,7 @@
     "prepublish": "cake build"
   },
   "author": "Alexander Bogdanov <andorn@gmail.com>",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "bookshelf": ">=0.8.2 <0.10",
     "chai": "^3.4.0",
