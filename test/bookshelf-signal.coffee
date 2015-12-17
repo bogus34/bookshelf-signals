@@ -38,7 +38,7 @@ describe 'Bookshelf signals', ->
         yield new User().save()
         hub.triggerThen.should.have.been.called()
 
-    it 'filters events by class', co ->
+    it 'filters events by class', ->
         f1 = spy()
         f2 = spy()
         f3 = spy()
@@ -47,7 +47,8 @@ describe 'Bookshelf signals', ->
         db.on 'saving', db.Model, f2
         db.on 'saving', db.Collection, f3
 
-        yield new User().save()
+        db.triggerThen 'saving', new User()
+
         f1.should.have.been.called()
         f2.should.have.been.called()
         f3.should.not.have.been.called()
@@ -63,37 +64,35 @@ describe 'Bookshelf signals', ->
         yield new User().save().should.be.fulfilled
 
     describe 'once', ->
-        it "method 'once' doesn't unsubscribe callback if it was not called", co ->
+        it "method 'once' doesn't unsubscribe callback if it was not called", ->
             class User2 extends db.Model
                 tableName: 'users'
 
             f = spy()
             db.once 'saving', User2, f
 
-            yield new User().save().should.be.fulfilled
+            db.triggerThen 'saving', new User()
             f.should.not.have.been.called()
-            yield [
-                new User2().save().should.be.fulfilled
-                new User2().save().should.be.fulfilled
-            ]
-            f.should.be.called.once
 
+            db.triggerThen 'saving', new User2()
+            db.triggerThen 'saving', new User2()
+            f.should.have.been.called.once
 
     describe 'off', ->
-        it 'can unsubscribe handler and class pair', co ->
+        it 'can unsubscribe handler and class pair', ->
             f = spy()
             db.on 'saving', db.Model, f
 
-            yield new User().save().should.be.fulfilled
+            db.triggerThen 'saving', new User()
             f.should.have.been.called()
 
             f.reset()
             db.off 'saving', db.Model, f
 
-            yield new User().save().should.be.fulfilled
+            db.triggerThen 'saving', new User()
             f.should.not.have.been.called()
 
-        it 'unsubscribes all filtered handlers if cls not passed', co ->
+        it 'unsubscribes all filtered handlers if cls not passed', ->
             f1 = spy()
             f2 = spy()
             db.on 'saving', User, f1
@@ -101,7 +100,7 @@ describe 'Bookshelf signals', ->
             db.on 'saving', f1
             db.on 'saving', f2
 
-            yield new User().save().should.be.fulfilled
+            db.triggerThen 'saving', new User()
             f1.should.have.been.called.exactly(3)
             f2.should.have.been.called.once
 
@@ -109,6 +108,41 @@ describe 'Bookshelf signals', ->
             f2.reset()
             db.off 'saving', f1
 
-            yield new User().save().should.be.fulfilled
+            db.triggerThen 'saving', new User()
             f1.should.not.have.been.called()
             f2.should.have.been.called.once
+
+    describe 'removeAllListeners', ->
+        it 'unsubscribes all event listeners for class', ->
+            f1 = spy()
+            f2 = spy()
+            f3 = spy()
+            db.on 'saving', User, f1
+            db.on 'saving', db.Model, f2
+            db.on 'saving', f3
+
+            db.removeAllListeners 'saving', User
+
+            db.triggerThen 'saving', new User()
+
+            f1.should.not.have.been.called()
+            f2.should.have.been.called()
+            f3.should.have.been.called()
+
+        it 'unsubscribes all evnt listeners', ->
+            f1 = spy()
+            f2 = spy()
+            f3 = spy()
+
+            db.on 'saving', User, f1
+            db.on 'saving', f2
+            db.on 'saved', f3
+
+            db.removeAllListeners 'saving'
+
+            db.triggerThen 'saving', new User()
+            db.triggerThen 'saved', new User()
+
+            f1.should.not.have.been.called()
+            f2.should.not.have.been.called()
+            f3.should.have.been.called()

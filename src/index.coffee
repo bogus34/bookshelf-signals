@@ -5,7 +5,7 @@ plugin = (hub) -> (db) ->
         constructor: ->
             @_handlersWithFilter = []
 
-        on: (event, cls, handler) ->
+        addListener: (event, cls, handler) ->
             unless handler?
                 handler = cls
                 cls = null
@@ -25,7 +25,9 @@ plugin = (hub) -> (db) ->
 
             super(event, fn)
 
-        off: (event, cls, handler) ->
+        on: EventsHub::addListener
+
+        removeListener: (event, cls, handler) ->
             unless handler?
                 handler = cls
                 cls = null
@@ -38,15 +40,41 @@ plugin = (hub) -> (db) ->
                 fns.push handler
                 super(event, fn) for fn in fns
 
+        off: EventsHub::removeListener
+
         once: (event, cls, handler) ->
             once = =>
                 @off event, cls, once
                 handler(arguments...)
             @on event, cls, once
 
+        removeAllListeners: (event, cls) ->
+            unless event
+                @_handlersWithFilter = []
+                return super()
+
+            unless cls
+                # remove unused handlers
+                listeners = @listeners event
+                @_handlersWithFilter = (x for x in @_handlersWithFilter when x[2] not in listeners)
+                return super(event)
+
+            for listener in @listeners(event)
+                i = @_findListener(cls, listener)[0]
+                unless i is -1
+                    @_handlersWithFilter.splice i, 1
+                    @removeListener(event, listener)
+
+            undefined
+
         _findHandler: (cls, handler) ->
             for [cls_, handler_, fn], i in @_handlersWithFilter
                 return [i, fn] if cls is cls_ and handler is handler_
+            [-1, null]
+
+        _findListener: (cls, fn) ->
+            for [cls_, handler, fn_], i in @_handlersWithFilter
+                return [i, handler] if cls is cls_ and fn is fn_
             [-1, null]
 
         _popHandler: (cls, handler) ->
