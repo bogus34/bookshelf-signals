@@ -5,7 +5,7 @@ plugin = (hub) -> (db) ->
         constructor: ->
             @_handlersWithFilter = []
 
-        addListener: (event, cls, handler) ->
+        on: (event, cls, handler) ->
             unless handler?
                 handler = cls
                 cls = null
@@ -25,7 +25,7 @@ plugin = (hub) -> (db) ->
 
             super(event, fn)
 
-        on: EventsHub::addListener
+        addListener: EventsHub::on
 
         removeListener: (event, cls, handler) ->
             unless handler?
