@@ -1,14 +1,19 @@
 {
   "name": "bookshelf-signals",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Bookshelf plugin that translates all models and collection events to a single hub",
   "main": "lib/index.js",
   "scripts": {
     "test": "cake test",
     "prepublish": "cake build"
   },
+  "keywords": ["bookshelf"],
   "author": "Alexander Bogdanov <andorn@gmail.com>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bogus34/bookshelf-signals"
+  },
   "devDependencies": {
     "bookshelf": ">=0.8.2 <0.10",
     "chai": "^3.4.0",
