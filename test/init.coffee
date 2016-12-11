@@ -7,10 +7,11 @@ init = ->
     return db if db?
 
     knex = Knex
-            client: 'sqlite'
-            debug: process.env.BOOKSHELF_SIGNALS_TESTS_DEBUG?
-            connection:
-                filename: ':memory:'
+        client: 'sqlite'
+        debug: process.env.BOOKSHELF_SIGNALS_TESTS_DEBUG?
+        connection:
+            filename: ':memory:'
+        useNullAsDefault: true
 
     db = Bookshelf knex
     db.plugin Signals()

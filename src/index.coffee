@@ -1,4 +1,7 @@
 Events = require 'bookshelf/lib/base/events'
+if typeof Events isnt 'function' and Events.default
+    Events = Events.default
+
 
 plugin = (hub) -> (db) ->
     class EventsHub extends Events
@@ -97,8 +100,14 @@ plugin = (hub) -> (db) ->
     unless hub?
         hub = new EventsHub()
         db._eventsHub = hub
-        for method in ['on', 'addListener', 'off', 'removeListener', 'removeAllListeners',
-            'trigger', 'emmit', 'triggerThen', 'emmitThen', 'once']
+        methods = [
+            'on', 'addListener', 'off',
+            'removeListener', 'removeAllListeners',
+            'trigger', 'emmit', 'triggerThen',
+            'emmitThen', 'once'
+        ]
+
+        for method in methods
             do (method) ->
                 db[method] = -> hub[method].apply(hub, arguments)
 
